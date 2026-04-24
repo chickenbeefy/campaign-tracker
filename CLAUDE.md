@@ -1,5 +1,67 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Campaign & Lead Tracker — a mock marketing tool where users manually create campaigns and generate AI ad copy variants using Gemini 2.5 Flash. No live ad-platform integration.
+
+Full spec is at `docs/project.md`. Read it before touching any code.
+
+## Commands
+
+```bash
+PORT=3001 npm run dev      # dev server (always use port 3001)
+npm run build              # production build — run before every commit
+npm run auth:migrate       # apply Better Auth schema migrations
+```
+
+Database (`DATABASE_URL` in `.env.local`):
+```bash
+psql "$DATABASE_URL"       # connect directly
+```
+
+## Architecture
+
+### Database layer
+
+Raw SQL via `pg`. Add `lib/db.ts` with a `Pool` singleton. Migrations are plain `.sql` files — run them with `psql` and commit the file. No ORM, no migration runner.
+
+### Routes to build
+
+| Route | Notes |
+|---|---|
+| `/` | Landing — links to sign-in or dashboard |
+| `/dashboard` | Aggregate totals + top-5 table, auth-guarded |
+| `/campaigns` | List all campaigns, auth-guarded |
+| `/campaigns/new` | Create form + server action |
+| `/campaigns/[id]` | Detail + ad copy list + AI generate button |
+| `/campaigns/[id]/edit` | Edit form + server action |
+
+### AI agent
+
+Entry point: `app/campaigns/[id]/generate-copy/action.ts` (server action).
+
+- Calls `generateObject` (Vercel AI SDK) with `google('gemini-2.5-flash')`
+- Two tools: `getTopCampaignsByChannel` (`lib/tools/get-top-campaigns.ts`, required) + `google_search` (optional Gemini grounding)
+- `stopWhen: stepCountIs(5)` caps the loop
+- Output schema: `{ variants: [{ angle: 'benefits'|'urgency'|'question', copy_text: string }] }` — exactly 3
+- Saves all 3 as `ad_copy` rows linked to the campaign
+- Debug tool calls: log `result.steps`
+
+### Database schema
+
+`campaigns`: `id` (uuid PK), `name`, `channel` (meta_ads/google_ads/email/other), `start_date`, `end_date` (nullable), `spend_zar` (bigint rands), `leads_count` (int default 0), `status` (planned/live/ended), `notes`, `created_at`
+
+`ad_copy`: `id` (uuid PK), `campaign_id` (FK → campaigns.id, ON DELETE CASCADE), `angle` (benefits/urgency/question), `copy_text`, `created_at`
+
+## Commit format
+
+`type(scope): description` — one commit per working feature.
+Types: `feat`, `fix`, `chore`, `docs`
+
+---
+
 This file mirrors the repo operating rules in `AGENTS.md` for Claude-based agents.
 
 If `CLAUDE.md` and `AGENTS.md` ever diverge, follow `AGENTS.md`.
