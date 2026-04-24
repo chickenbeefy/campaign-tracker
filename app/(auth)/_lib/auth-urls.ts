@@ -1,4 +1,4 @@
-export const defaultPostAuthPath = "/app"
+export const defaultPostAuthPath = "/dashboard"
 
 function createLocalUrl(
   pathname: string,

@@ -102,7 +102,7 @@ export function EmailPasswordCard({
       }
     }
 
-    router.push("/app")
+    router.push("/dashboard")
     router.refresh()
   }
 

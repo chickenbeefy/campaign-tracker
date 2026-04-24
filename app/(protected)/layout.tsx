@@ -2,6 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { getMissingAuthConfig, getServerSession, isAuthReady } from "@/lib/auth"
+import { Nav } from "./_components/nav"
 
 const primaryLinkClass =
   "inline-flex h-7 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition hover:bg-primary/80"
@@ -29,7 +30,7 @@ export default async function ProtectedLayout({
           </p>
           <div className="mt-6">
             <Link className={primaryLinkClass} href="/">
-              Back to template overview
+              Back to home
             </Link>
           </div>
         </div>
@@ -43,5 +44,10 @@ export default async function ProtectedLayout({
     redirect("/sign-in")
   }
 
-  return children
+  return (
+    <div className="min-h-screen bg-background">
+      <Nav />
+      <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+    </div>
+  )
 }
