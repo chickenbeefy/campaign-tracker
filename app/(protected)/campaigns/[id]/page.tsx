@@ -3,6 +3,8 @@ import { notFound } from "next/navigation"
 
 import { db } from "@/lib/db"
 import { DeleteButton } from "./_components/delete-button"
+import { GenerateCopyButton } from "./_components/generate-copy-button"
+import { CopyToClipboardButton } from "./_components/copy-to-clipboard-button"
 
 type Campaign = {
   id: string
@@ -140,12 +142,13 @@ export default async function CampaignDetailPage({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold">Generated ad copy</h2>
+          <GenerateCopyButton campaignId={id} />
         </div>
 
         {adCopy.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/70 px-6 py-10 text-center">
             <p className="text-sm text-muted-foreground">
-              No ad copy yet. Use the AI generator to create variants.
+              No ad copy yet. Click &ldquo;Generate ad copy with AI&rdquo; above to create variants.
             </p>
           </div>
         ) : (
@@ -153,17 +156,20 @@ export default async function CampaignDetailPage({
             {adCopy.map((copy) => (
               <div
                 key={copy.id}
-                className="rounded-2xl border border-border/70 bg-card/85 p-4 shadow-sm"
+                className="flex flex-col rounded-2xl border border-border/70 bg-card/85 p-4 shadow-sm"
               >
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${angleClass[copy.angle] ?? ""}`}
+                  className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${angleClass[copy.angle] ?? ""}`}
                 >
                   {copy.angle}
                 </span>
-                <p className="mt-3 text-sm leading-6">{copy.copy_text}</p>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {new Date(copy.created_at).toLocaleString("en-ZA")}
-                </p>
+                <p className="mt-3 flex-1 text-sm leading-6">{copy.copy_text}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(copy.created_at).toLocaleString("en-ZA")}
+                  </p>
+                  <CopyToClipboardButton text={copy.copy_text} />
+                </div>
               </div>
             ))}
           </div>
