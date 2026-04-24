@@ -1,7 +1,7 @@
 "use server"
 
 import { google } from "@ai-sdk/google"
-import { generateText, Output, stepCountIs } from "ai"
+import { generateText, stepCountIs } from "ai"
 import { z } from "zod"
 
 import { db } from "@/lib/db"
@@ -38,20 +38,22 @@ Then write exactly 3 ad copy variants, each under 25 words, each with a differen
 - benefits: focus on what the customer gets
 - urgency: focus on why they should act now
 - question: open with a question that hooks the reader
-Do not use emojis. Do not use exclamation marks more than once per variant. Match the tone of what worked before, but don't copy it verbatim.`,
+Do not use emojis. Do not use exclamation marks more than once per variant. Match the tone of what worked before, but don't copy it verbatim.
+
+Return ONLY a valid JSON object in this exact shape — no markdown, no explanation:
+{"variants":[{"angle":"benefits","copy_text":"..."},{"angle":"urgency","copy_text":"..."},{"angle":"question","copy_text":"..."}]}`,
     prompt: `Campaign name: ${campaign.name}
 Channel: ${campaign.channel}
 Notes: ${campaign.notes ?? "None"}`,
     tools: {
       getTopCampaignsByChannel,
-      google_search: google.tools.googleSearch({}),
     },
     stopWhen: stepCountIs(5),
-    experimental_output: Output.object({ schema: variantsSchema }),
   })
 
-  const parsed = result.experimental_output
-  if (!parsed) throw new Error("No structured output returned from the model")
+  // Strip markdown fences if the model wraps the JSON anyway
+  const raw = result.text.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim()
+  const parsed = variantsSchema.parse(JSON.parse(raw))
 
   await db.query(
     `INSERT INTO ad_copy (campaign_id, angle, copy_text)
